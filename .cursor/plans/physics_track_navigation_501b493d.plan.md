@@ -4,46 +4,46 @@ overview: Replace ScrollControls with a custom physics-based navigation system w
 todos:
   - id: types-arc
     content: Add ArcType enum (THEORY=0, MATH=1, FAITH=2), arc color constants, and TrackPhysicsState interface to types.ts
-    status: pending
+    status: completed
   - id: physics-hook-state
     content: "Create useTrackPhysics.ts: define physics state ref (t, velocity, nearestSection, currentArc) and constants (GRAVITY, FRICTION, ESCAPE_THRESHOLD, ARC_BARRIER)"
-    status: pending
+    status: completed
   - id: physics-hook-input
     content: "useTrackPhysics: add wheel event listener that accumulates deltaY into velocity, and touch start/move/end handlers for mobile swipe-to-velocity"
-    status: pending
+    status: completed
   - id: physics-hook-tick
     content: "useTrackPhysics: implement per-frame physics tick -- friction decay, nearest-section gravity, arc-barrier resistance, escape velocity bypass, position wrap-around"
-    status: pending
+    status: completed
   - id: physics-hook-arc
     content: "useTrackPhysics: derive currentArc from t position (0-0.417=theory, 0.417-0.583=math, 0.583-1.0=faith), expose arc color via interpolation"
-    status: pending
+    status: completed
   - id: track-geometry
     content: "Visuals.tsx: create CatmullRomCurve3 closed loop with 12 station points at radius 100, compute station positions + perpendicular side offsets"
-    status: pending
+    status: completed
   - id: camera-follows-t
     content: "Visuals.tsx: replace old camera system -- camera.position = track.getPointAt(t), camera.lookAt = track.getPointAt(t+0.008), no lerp or section switching"
-    status: pending
+    status: completed
   - id: orbiting-sections
     content: "Visuals.tsx: each exhibit orbits its station point -- small sin/cos offset that drifts over time, giving sections a floating/alive feel within their arc"
-    status: pending
+    status: completed
   - id: proximity-visibility
     content: "Visuals.tsx: each exhibit visible only when camera distance < 60 units, replacing all section-index visibility flags"
-    status: pending
+    status: completed
   - id: ternary-atmosphere
     content: "Visuals.tsx: ambient light color + fog color interpolate based on current arc (cyan/white/magenta), distributed arc-tinted point lights along track"
-    status: pending
+    status: completed
   - id: app-remove-scroll
     content: "App.tsx: remove ScrollControls and SceneWrapper, render SceneContent directly in Canvas receiving physics state, render Overlay as fixed div outside Canvas"
-    status: pending
+    status: completed
   - id: overlay-fixed-hud
     content: "Overlay.tsx: replace Scroll html with fixed positioned div showing current section title/subtitle/tagline + arc indicator, CSS fade transitions between sections"
-    status: pending
+    status: completed
   - id: stars-expansion
     content: "App.tsx: increase Stars radius to 300+, depth to 100, count to 5000 to fill the larger cosmic space"
-    status: pending
+    status: completed
   - id: verify-flight
     content: "Verify: gentle scroll cycles sections within arc, hard scroll escapes to next arc, track loops cyclically, all 12 exhibits render and orbit, atmosphere shifts per arc"
-    status: pending
+    status: completed
 isProject: false
 ---
 
