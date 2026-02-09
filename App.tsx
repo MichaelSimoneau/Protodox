@@ -46,14 +46,14 @@ export default function App() {
         </div>
       </div>
 
-      {/* 3D Canvas — no ScrollControls, physics-driven */}
+      {/* 3D Canvas — physics-driven, no ScrollControls */}
       <Canvas gl={{ antialias: false, stencil: false, depth: true }}>
-        <Suspense fallback={null}>
-          <color attach="background" args={['#050505']} />
-          <Stars radius={300} depth={100} count={5000} factor={4} saturation={0} fade speed={0.5} />
-          
-          <SceneContent physics={physics} />
+        <color attach="background" args={['#050505']} />
+        <Stars radius={300} depth={100} count={5000} factor={4} saturation={0} fade speed={0.5} />
+        
+        <SceneContent physics={physics} />
 
+        <Suspense fallback={null}>
           <EffectComposer>
             <Bloom luminanceThreshold={0.8} opacity={0.7} />
             <Noise opacity={0.1} blendFunction={BlendFunction.OVERLAY} />

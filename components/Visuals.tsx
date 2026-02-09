@@ -1,10 +1,10 @@
-import React, { useRef, useMemo } from 'react';
+import React, { Suspense, useRef, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Float, Points, PointMaterial, Text, Box, PerspectiveCamera, Line, Sphere, Plane, Grid } from '@react-three/drei';
 import * as THREE from 'three';
 import { TrackPhysicsReturn } from '../useTrackPhysics';
 
-const MONO_FONT = "https://fonts.gstatic.com/s/jetbrainsmono/v18/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0Pn54W4E.woff";
+const MONO_FONT = "https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/fonts/webfonts/JetBrainsMono-Regular.woff2";
 const TRACK_RADIUS = 100;
 const TOTAL_SECTIONS = 12;
 const SIDE_OFFSET_DIST = 8;       // reduced from 15 — keeps exhibits in FOV
@@ -352,11 +352,9 @@ export const SceneContent: React.FC<SceneContentProps> = ({ physics }) => {
 
   // ── Per-frame: physics tick + camera + atmosphere ─────────────────────
   useFrame(() => {
-    // Run physics
     physics.tick();
     const state = physics.getState();
 
-    // Camera follows track
     if (cameraRef.current) {
       const camPos = track.getPointAt(state.t);
       const lookAhead = track.getPointAt((state.t + 0.008) % 1);
@@ -364,7 +362,6 @@ export const SceneContent: React.FC<SceneContentProps> = ({ physics }) => {
       cameraRef.current.lookAt(lookAhead);
     }
 
-    // Atmosphere color
     if (ambientRef.current) {
       const arcColor = physics.getArcColor();
       ambientRef.current.color.copy(arcColor);
@@ -461,7 +458,9 @@ const ExhibitStation: React.FC<ExhibitStationProps> = ({ index, basePos, physics
 
   return (
     <group ref={groupRef}>
-      <ExhibitComponent />
+      <Suspense fallback={null}>
+        <ExhibitComponent />
+      </Suspense>
     </group>
   );
 };
