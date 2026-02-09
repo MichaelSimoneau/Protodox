@@ -43,6 +43,18 @@ export const Overlay: React.FC = () => {
                     <p>{`> STATUS: ACCELERATING`}</p>
                 </div>
               )}
+
+              {section.id === 'proofs' && (
+                <div className="mt-8 p-4 bg-gray-900/50 border border-cyan-500/30 font-mono text-xs text-cyan-300">
+                    <p className="mb-2">// ZEROTH_MATH.ENGINE</p>
+                    <p>{`> PROOF_1: 1 / 0 = -1`}</p>
+                    <p>{`> PRESENCE / TOTALITY = POTENTIAL`}</p>
+                    <p className="mt-2">{`> PROOF_2: 0 × 0 = 1`}</p>
+                    <p>{`> TOTALITY × TOTALITY = PRESENCE`}</p>
+                    <p className="mt-2 text-cyan-500">{`> METHOD: 2-7-2 DECOMPOSITION`}</p>
+                    <p className="text-cyan-500">{`> STATUS: GENESIS_FRACTURE`}</p>
+                </div>
+              )}
             </div>
           </section>
         ))}
@@ -50,6 +62,7 @@ export const Overlay: React.FC = () => {
         {/* Footer */}
         <section className="h-[50vh] flex flex-col items-center justify-center p-10 bg-black text-center">
             <h1 className="font-header text-5xl mb-4 text-white">PROTODOX</h1>
+            <p className="font-mono text-gray-500 text-sm mb-2">THE DIVINE ARCHITECTURE</p>
             <p className="font-mono text-gray-500 text-sm mb-8">© MICHAEL SIMONEAU | THE BÀI ZÉ</p>
             <button className="px-8 py-3 border border-cyan-500 text-cyan-500 font-mono hover:bg-cyan-500 hover:text-black transition-all uppercase tracking-widest text-sm">
                 Initiate Alignment

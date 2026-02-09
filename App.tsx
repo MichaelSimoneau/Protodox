@@ -24,6 +24,7 @@ export default function App() {
                   <p className="mb-2 text-xs text-cyan-500">:: ZEROTH THEORY BOOT ::</p>
                   <p className="mb-4 typing-effect text-gray-400">Loading New Physics Engine...</p>
                   <p className="mb-4 text-gray-400">Compiling Tensor Calculus...</p>
+                  <p className="mb-4 text-gray-400">Initializing Double Dragon Ouroboros...</p>
                   <p className="mb-8 text-white">STATUS: PROOF ESTABLISHED.</p>
                   
                   <h1 className="text-4xl md:text-6xl font-header text-white mb-2 glitch-text" data-text="PROTODOX">PROTODOX</h1>
@@ -55,7 +56,7 @@ export default function App() {
           <color attach="background" args={['#050505']} />
           <Stars radius={100} depth={50} count={3000} factor={4} saturation={0} fade speed={1} />
           
-          <ScrollControls pages={8} damping={0.2}>
+          <ScrollControls pages={12} damping={0.2}>
             <SceneWrapper />
             <Overlay />
           </ScrollControls>
