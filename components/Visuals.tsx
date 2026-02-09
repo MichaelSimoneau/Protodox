@@ -1,52 +1,36 @@
 import React, { Suspense, useRef, useMemo } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
-import { Float, Points, PointMaterial, Text, Box, PerspectiveCamera, Line, Sphere, Plane, Grid } from '@react-three/drei';
+import { useFrame } from '@react-three/fiber';
+import { Float, Points, PointMaterial, Text, Box, PerspectiveCamera, Line, Sphere, Grid } from '@react-three/drei';
 import * as THREE from 'three';
 import { TrackPhysicsReturn } from '../useTrackPhysics';
+import {
+  ArcType, ARC_COLORS, ARC_SECTIONS, ARC_ORDER,
+  HUB_POSITIONS, MACRO_RADIUS, MICRO_RADIUS,
+} from '../types';
 
 const MONO_FONT = "https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/fonts/webfonts/JetBrainsMono-Regular.woff2";
-const TRACK_RADIUS = 100;
-const TOTAL_SECTIONS = 12;
-const SIDE_OFFSET_DIST = 8;       // reduced from 15 — keeps exhibits in FOV
-const FORWARD_OFFSET = 0.35;      // place exhibit 35% ahead toward next section
-const VISIBILITY_DIST = 80;
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// TRACK GEOMETRY
-// ═══════════════════════════════════════════════════════════════════════════════
+// Camera sits this far "behind" the hub (outward from world center), looking in
+const CAM_VIEW_DIST = 90;
+const CAM_ELEVATION = 35;
+const CAM_LERP = 0.025; // slow, cinematic blend between hubs
 
-/** Build the closed-loop CatmullRom track with 12 control points */
-function buildTrack(): THREE.CatmullRomCurve3 {
-  const points = Array.from({ length: TOTAL_SECTIONS }, (_, i) => {
-    const angle = (i / TOTAL_SECTIONS) * Math.PI * 2;
-    return new THREE.Vector3(
-      Math.cos(angle) * TRACK_RADIUS,
-      Math.sin(angle * 2) * 20,  // gentle vertical wave
-      Math.sin(angle) * TRACK_RADIUS
-    );
-  });
-  return new THREE.CatmullRomCurve3(points, true, 'catmullrom', 0.5);
+// Orbital radii for sub-sections (spread out like planetary distances)
+function getOrbitRadius(localIndex: number, count: number): number {
+  const minR = 18;
+  const maxR = MICRO_RADIUS + 5;
+  return minR + (localIndex / Math.max(1, count - 1)) * (maxR - minR);
 }
 
-/** Compute the position for an exhibit station — placed AHEAD of the
- *  camera's settle point so the exhibit is visible in the forward FOV. */
-function getStationPosition(
-  track: THREE.CatmullRomCurve3,
-  index: number,
-  side: 'left' | 'right'
-): THREE.Vector3 {
-  // Place exhibit ahead on the track (toward the next section)
-  const aheadT = ((index + FORWARD_OFFSET) / TOTAL_SECTIONS) % 1;
-  const pos = track.getPointAt(aheadT);
-  const tangent = track.getTangentAt(aheadT);
-  const up = new THREE.Vector3(0, 1, 0);
-  const sideDir = tangent.clone().cross(up).normalize();
-  const sign = side === 'right' ? 1 : -1;
-  return pos.clone().add(sideDir.multiplyScalar(SIDE_OFFSET_DIST * sign));
+// Orbital speed per planet (inner orbits faster, outer slower)
+function getOrbitSpeed(localIndex: number, count: number): number {
+  const fast = 0.25;
+  const slow = 0.08;
+  return fast - (localIndex / Math.max(1, count - 1)) * (fast - slow);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// EXHIBIT COMPONENTS (unchanged from before, just accept position)
+// EXHIBIT COMPONENTS (planet visuals for each sub-section)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const Rank0Scalar = () => (
@@ -219,9 +203,7 @@ const DDOOrganism = () => {
     ];
   }, [nodes]);
   useFrame((state) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y = state.clock.getElapsedTime() * 0.15;
-    }
+    if (groupRef.current) groupRef.current.rotation.y = state.clock.getElapsedTime() * 0.15;
   });
   return (
     <group ref={groupRef}>
@@ -244,23 +226,15 @@ const DDOOrganism = () => {
 
 const OuroborusRings = () => (
   <group rotation={[Math.PI / 2, 0, 0]}>
-    <mesh>
-      <torusGeometry args={[3, 0.03, 16, 100]} />
-      <meshBasicMaterial color="#ff00c1" />
-    </mesh>
-    <mesh rotation={[0, Math.PI / 2, 0]}>
-      <torusGeometry args={[3, 0.03, 16, 100]} />
-      <meshBasicMaterial color="#ff00c1" />
-    </mesh>
+    <mesh><torusGeometry args={[3, 0.03, 16, 100]} /><meshBasicMaterial color="#ff00c1" /></mesh>
+    <mesh rotation={[0, Math.PI / 2, 0]}><torusGeometry args={[3, 0.03, 16, 100]} /><meshBasicMaterial color="#ff00c1" /></mesh>
     <Text position={[0, 0, 4.5]} fontSize={0.2} color="#ff00c1" anchorX="center" font={MONO_FONT} rotation={[-Math.PI / 2, 0, 0]}>THE LOOP CLOSES</Text>
   </group>
 );
 
 const BaiZeText = () => (
   <Float speed={10} rotationIntensity={0.5} floatIntensity={0.5}>
-    <Text fontSize={0.5} color="#ff00c1" font={MONO_FONT} outlineWidth={0.02} outlineColor="black">
-      {"THE B\u00C0I Z\u00C9"}
-    </Text>
+    <Text fontSize={0.5} color="#ff00c1" font={MONO_FONT} outlineWidth={0.02} outlineColor="black">{"THE B\u00C0I Z\u00C9"}</Text>
   </Float>
 );
 
@@ -276,19 +250,11 @@ const HeadlessText = () => (
 const AlignmentVisual = () => (
   <>
     <group rotation={[Math.PI / 2, 0, 0]}>
-      <mesh>
-        <torusGeometry args={[3, 0.02, 16, 100]} />
-        <meshBasicMaterial color="#ff00c1" />
-      </mesh>
-      <mesh rotation={[0, Math.PI / 2, 0]}>
-        <torusGeometry args={[3, 0.02, 16, 100]} />
-        <meshBasicMaterial color="#ff00c1" />
-      </mesh>
+      <mesh><torusGeometry args={[3, 0.02, 16, 100]} /><meshBasicMaterial color="#ff00c1" /></mesh>
+      <mesh rotation={[0, Math.PI / 2, 0]}><torusGeometry args={[3, 0.02, 16, 100]} /><meshBasicMaterial color="#ff00c1" /></mesh>
     </group>
     <Float speed={2} rotationIntensity={1} floatIntensity={1}>
-      <Sphere args={[0.15, 32, 32]}>
-        <meshStandardMaterial emissive="#ff00c1" emissiveIntensity={3} color="#ff00c1" />
-      </Sphere>
+      <Sphere args={[0.15, 32, 32]}><meshStandardMaterial emissive="#ff00c1" emissiveIntensity={3} color="#ff00c1" /></Sphere>
       <pointLight intensity={3} distance={8} color="#ff00c1" />
     </Float>
   </>
@@ -296,171 +262,266 @@ const AlignmentVisual = () => (
 
 const IntroText = () => (
   <Float speed={1} rotationIntensity={0.1} floatIntensity={0.2}>
-    <Text position={[0, 2, 0]} fontSize={0.3} color="#00ffff" anchorX="center" font={MONO_FONT} outlineWidth={0.01} outlineColor="black">
-      GEOMETRY IS THE SOURCE CODE
-    </Text>
-    <Text position={[0, 0, 0]} fontSize={0.15} color="#555" anchorX="center" font={MONO_FONT}>
-      PROTODOX
-    </Text>
+    <Text position={[0, 2, 0]} fontSize={0.3} color="#00ffff" anchorX="center" font={MONO_FONT} outlineWidth={0.01} outlineColor="black">GEOMETRY IS THE SOURCE CODE</Text>
+    <Text position={[0, 0, 0]} fontSize={0.15} color="#555" anchorX="center" font={MONO_FONT}>PROTODOX</Text>
   </Float>
 );
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// EXHIBIT REGISTRY — maps section index to its React component
+// EXHIBIT REGISTRY
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const EXHIBITS: React.FC[] = [
-  IntroText,       // 0: Zeroth Theory
-  Rank0Scalar,     // 1: Rank-0
-  Rank1Vector,     // 2: Rank-1
-  Rank2Slab,       // 3: Rank-2
-  Rank3Reality,    // 4: Rank-3
-  ProofsVisual,    // 5: The Proofs
-  FallVisual,      // 6: The Fall
-  DDOOrganism,     // 7: DDO
-  OuroborusRings,  // 8: Ouroboros
-  BaiZeText,       // 9: Bai Ze
-  HeadlessText,    // 10: Headless
-  AlignmentVisual, // 11: Alignment
+  IntroText, Rank0Scalar, Rank1Vector, Rank2Slab, Rank3Reality,
+  ProofsVisual, FallVisual,
+  DDOOrganism, OuroborusRings, BaiZeText, HeadlessText, AlignmentVisual,
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// SCENE CONTENT — physics-driven camera on the cosmic track
+// HUB SUN — glowing sphere at each hub center
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const HubSun: React.FC<{ arc: ArcType }> = ({ arc }) => {
+  const hub = HUB_POSITIONS[arc];
+  const color = ARC_COLORS[arc];
+  const groupRef = useRef<THREE.Group>(null);
+
+  useFrame((state) => {
+    if (groupRef.current) {
+      const s = 1 + Math.sin(state.clock.elapsedTime * 1.2 + ARC_ORDER.indexOf(arc) * 2) * 0.08;
+      groupRef.current.scale.setScalar(s);
+    }
+  });
+
+  return (
+    <group ref={groupRef} position={[hub.x, hub.y, hub.z]}>
+      {/* Outer glow */}
+      <Sphere args={[5, 32, 32]}>
+        <meshStandardMaterial emissive={color} emissiveIntensity={1.5} color={color} transparent opacity={0.15} />
+      </Sphere>
+      {/* Core */}
+      <Sphere args={[2, 32, 32]}>
+        <meshStandardMaterial emissive={color} emissiveIntensity={4} color={color} />
+      </Sphere>
+      {/* Light beacon */}
+      <pointLight intensity={4} distance={150} color={color} />
+    </group>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ORBITING PLANET — a sub-section that orbits its hub like a planet
+// ═══════════════════════════════════════════════════════════════════════════════
+
+interface OrbitingPlanetProps {
+  arc: ArcType;
+  localIndex: number;
+  globalIndex: number;
+  activeSection: React.MutableRefObject<number>;
+  ExhibitComponent: React.FC;
+}
+
+const OrbitingPlanet: React.FC<OrbitingPlanetProps> = ({
+  arc, localIndex, globalIndex, activeSection, ExhibitComponent,
+}) => {
+  const hub = HUB_POSITIONS[arc];
+  const color = ARC_COLORS[arc];
+  const count = ARC_SECTIONS[arc].length;
+  const orbitR = getOrbitRadius(localIndex, count);
+  const orbitSpeed = getOrbitSpeed(localIndex, count);
+  const groupRef = useRef<THREE.Group>(null);
+  const matRef = useRef<THREE.MeshStandardMaterial>(null);
+
+  // Phase offset so planets don't start at the same angle
+  const phaseOffset = useMemo(() => (localIndex / count) * Math.PI * 2, [localIndex, count]);
+
+  useFrame((state) => {
+    if (!groupRef.current) return;
+    const t = state.clock.getElapsedTime();
+    const angle = phaseOffset + t * orbitSpeed;
+    const px = hub.x + Math.cos(angle) * orbitR;
+    const pz = hub.z + Math.sin(angle) * orbitR;
+    const py = hub.y + Math.sin(t * 0.3 + localIndex) * 1.5; // gentle bob
+    groupRef.current.position.set(px, py, pz);
+
+    // Highlight active planet
+    const isActive = activeSection.current === globalIndex;
+    if (matRef.current) {
+      const targetOpacity = isActive ? 0.9 : 0.35;
+      matRef.current.opacity += (targetOpacity - matRef.current.opacity) * 0.08;
+      const targetEmissive = isActive ? 3 : 0.8;
+      matRef.current.emissiveIntensity += (targetEmissive - matRef.current.emissiveIntensity) * 0.08;
+    }
+  });
+
+  return (
+    <group ref={groupRef}>
+      {/* Planet body */}
+      <Sphere args={[1.2, 24, 24]}>
+        <meshStandardMaterial
+          ref={matRef}
+          emissive={color}
+          emissiveIntensity={0.8}
+          color={color}
+          transparent
+          opacity={0.35}
+        />
+      </Sphere>
+      {/* Point light for active planet */}
+      <pointLight intensity={1} distance={15} color={color} />
+      {/* The 3D exhibit visual attached to this planet */}
+      <group scale={[0.6, 0.6, 0.6]}>
+        <Suspense fallback={null}>
+          <ExhibitComponent />
+        </Suspense>
+      </group>
+    </group>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ORBIT RING — thin torus showing a planet's orbital path
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const OrbitRing: React.FC<{ arc: ArcType; localIndex: number; count: number }> = ({ arc, localIndex, count }) => {
+  const hub = HUB_POSITIONS[arc];
+  const color = ARC_COLORS[arc];
+  const r = getOrbitRadius(localIndex, count);
+  return (
+    <mesh position={[hub.x, hub.y, hub.z]} rotation={[-Math.PI / 2, 0, 0]}>
+      <torusGeometry args={[r, 0.08, 8, 128]} />
+      <meshBasicMaterial color={color} transparent opacity={0.06} />
+    </mesh>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SCENE CONTENT — stationary camera looking at active hub
 // ═══════════════════════════════════════════════════════════════════════════════
 
 interface SceneContentProps {
   physics: TrackPhysicsReturn;
 }
 
+/** Compute the camera viewing position for a given hub */
+function hubCamPos(arc: ArcType): THREE.Vector3 {
+  const hub = HUB_POSITIONS[arc];
+  // Camera sits "outside" the hub (further from world origin), elevated
+  const dir = new THREE.Vector3(hub.x, 0, hub.z).normalize();
+  return new THREE.Vector3(
+    hub.x + dir.x * CAM_VIEW_DIST,
+    CAM_ELEVATION,
+    hub.z + dir.z * CAM_VIEW_DIST
+  );
+}
+
 export const SceneContent: React.FC<SceneContentProps> = ({ physics }) => {
   const cameraRef = useRef<THREE.PerspectiveCamera>(null);
   const ambientRef = useRef<THREE.AmbientLight>(null);
-  const { clock } = useThree();
 
-  // ── Build track + station data (once) ─────────────────────────────────
-  const { track, stations } = useMemo(() => {
-    const t = buildTrack();
-    const s = Array.from({ length: TOTAL_SECTIONS }, (_, i) => {
-      const side = i % 2 === 0 ? 'right' as const : 'left' as const;
-      return {
-        basePos: getStationPosition(t, i, side),
-        side,
-      };
-    });
-    return { track: t, stations: s };
+  const smoothCamPos = useRef(hubCamPos(ArcType.THEORY));
+  const smoothLookAt = useRef(new THREE.Vector3(
+    HUB_POSITIONS[ArcType.THEORY].x,
+    HUB_POSITIONS[ArcType.THEORY].y,
+    HUB_POSITIONS[ArcType.THEORY].z
+  ));
+
+  // Mutable ref for active section (avoids re-render of planets)
+  const activeSection = useRef(0);
+
+  const bgParticles = useMemo(() => {
+    const arr = new Float32Array(9000);
+    for (let i = 0; i < 9000; i++) arr[i] = (Math.random() - 0.5) * 600;
+    return arr;
   }, []);
 
-  // ── Per-frame: physics tick + camera + atmosphere ─────────────────────
-  useFrame(() => {
-    physics.tick();
+  // Build all orbit data
+  const orbits = useMemo(() => {
+    const list: Array<{ arc: ArcType; localIndex: number; globalIndex: number; count: number }> = [];
+    for (const arc of ARC_ORDER) {
+      const sections = ARC_SECTIONS[arc];
+      sections.forEach((globalIdx, localIdx) => {
+        list.push({ arc, localIndex: localIdx, globalIndex: globalIdx, count: sections.length });
+      });
+    }
+    return list;
+  }, []);
+
+  // ── Per-frame: physics + camera ───────────────────────────────────────
+  useFrame((_s, delta) => {
+    physics.tick(delta);
     const state = physics.getState();
+    activeSection.current = state.nearestSection;
+
+    // Determine which hub to look at
+    const targetArc = state.capturedArc ?? state.currentArc;
+    const hub = HUB_POSITIONS[targetArc];
+    const targetLook = new THREE.Vector3(hub.x, hub.y, hub.z);
+    const targetPos = hubCamPos(targetArc);
+
+    // Smooth camera movement
+    smoothCamPos.current.lerp(targetPos, CAM_LERP);
+    smoothLookAt.current.lerp(targetLook, CAM_LERP);
 
     if (cameraRef.current) {
-      const camPos = track.getPointAt(state.t);
-      const lookAhead = track.getPointAt((state.t + 0.008) % 1);
-      cameraRef.current.position.copy(camPos);
-      cameraRef.current.lookAt(lookAhead);
+      cameraRef.current.position.copy(smoothCamPos.current);
+      cameraRef.current.lookAt(smoothLookAt.current);
     }
 
     if (ambientRef.current) {
       const arcColor = physics.getArcColor();
-      ambientRef.current.color.copy(arcColor);
+      ambientRef.current.color.lerp(arcColor, 0.04);
     }
   });
 
-  // ── Compute orbiting exhibit positions each frame ─────────────────────
-  // We use a wrapper component to handle per-exhibit orbit + proximity
-
-  // Stable background particle positions (created once)
-  const bgParticles = useMemo(() => {
-    const arr = new Float32Array(6000);
-    for (let i = 0; i < 6000; i++) arr[i] = (Math.random() - 0.5) * 400;
-    return arr;
-  }, []);
-
   return (
     <>
-      <PerspectiveCamera makeDefault position={[0, 0, TRACK_RADIUS]} ref={cameraRef} fov={70} near={0.1} far={600} />
-      <ambientLight ref={ambientRef} intensity={0.4} color="#00ffff" />
-      <pointLight position={[0, 50, 0]} intensity={0.4} color="#ffffff" />
+      <PerspectiveCamera
+        makeDefault
+        position={smoothCamPos.current.toArray()}
+        ref={cameraRef}
+        fov={55}
+        near={0.1}
+        far={800}
+      />
+      <ambientLight ref={ambientRef} intensity={0.3} color="#00ffff" />
+      <pointLight position={[0, 80, 0]} intensity={0.2} color="#ffffff" />
 
-      {/* Background particles (expanded for cosmic space) */}
+      {/* Background particles */}
       <Points positions={bgParticles} stride={3}>
-        <PointMaterial transparent color="#555" size={0.05} depthWrite={false} />
+        <PointMaterial transparent color="#333" size={0.06} depthWrite={false} />
       </Points>
 
-      {/* Distributed arc-tinted point lights along the track */}
-      {Array.from({ length: 12 }, (_, i) => {
-        const t = i / 12;
-        const pos = track.getPointAt(t);
-        const arcT = t < 5 / 12 ? '#00ffff' : t < 7 / 12 ? '#ffffff' : '#ff00c1';
-        return <pointLight key={`tl-${i}`} position={[pos.x, pos.y + 10, pos.z]} intensity={0.25} distance={60} color={arcT} />;
-      })}
+      {/* Macro orbit ring */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[MACRO_RADIUS, 0.15, 16, 256]} />
+        <meshBasicMaterial color="#111" transparent opacity={0.06} />
+      </mesh>
 
-      {/* Exhibit stations — each orbits and has proximity visibility */}
-      {stations.map((station, i) => (
-        <ExhibitStation
-          key={i}
-          index={i}
-          basePos={station.basePos}
-          physics={physics}
-          track={track}
-          clock={clock}
-          ExhibitComponent={EXHIBITS[i]}
+      {/* Hub suns */}
+      {ARC_ORDER.map((arc) => (
+        <HubSun key={arc} arc={arc} />
+      ))}
+
+      {/* Orbital rings (one per sub-section) */}
+      {orbits.map((o) => (
+        <OrbitRing key={`ring-${o.globalIndex}`} arc={o.arc} localIndex={o.localIndex} count={o.count} />
+      ))}
+
+      {/* Orbiting planets (sub-sections) */}
+      {orbits.map((o) => (
+        <OrbitingPlanet
+          key={o.globalIndex}
+          arc={o.arc}
+          localIndex={o.localIndex}
+          globalIndex={o.globalIndex}
+          activeSection={activeSection}
+          ExhibitComponent={EXHIBITS[o.globalIndex]}
         />
       ))}
 
-      {/* Fog — far pushed out so stars remain visible */}
-      <fog attach="fog" args={['#050505', 100, 500]} />
+      {/* Fog */}
+      <fog attach="fog" args={['#030308', 150, 700]} />
     </>
-  );
-};
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// EXHIBIT STATION — handles orbit animation + proximity visibility per exhibit
-// ═══════════════════════════════════════════════════════════════════════════════
-
-interface ExhibitStationProps {
-  index: number;
-  basePos: THREE.Vector3;
-  physics: TrackPhysicsReturn;
-  track: THREE.CatmullRomCurve3;
-  clock: THREE.Clock;
-  ExhibitComponent: React.FC;
-}
-
-const ExhibitStation: React.FC<ExhibitStationProps> = ({ index, basePos, physics, track, clock, ExhibitComponent }) => {
-  const groupRef = useRef<THREE.Group>(null);
-
-  useFrame(() => {
-    if (!groupRef.current) return;
-
-    // Orbit: small drift around base position
-    const time = clock.getElapsedTime();
-    const orbitAngle = time * 0.15 + index * 0.5;
-    const orbitR = 3;
-    const ox = Math.cos(orbitAngle) * orbitR;
-    const oy = Math.sin(orbitAngle * 0.7) * 1.5;
-    const oz = Math.sin(orbitAngle) * orbitR;
-
-    groupRef.current.position.set(
-      basePos.x + ox,
-      basePos.y + oy,
-      basePos.z + oz
-    );
-
-    // Proximity visibility
-    const state = physics.getState();
-    const camPos = track.getPointAt(state.t);
-    const dist = camPos.distanceTo(groupRef.current.position);
-    groupRef.current.visible = dist < VISIBILITY_DIST;
-  });
-
-  return (
-    <group ref={groupRef}>
-      <Suspense fallback={null}>
-        <ExhibitComponent />
-      </Suspense>
-    </group>
   );
 };

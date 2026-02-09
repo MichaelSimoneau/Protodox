@@ -48,16 +48,42 @@ export const ARC_SECTIONS: Record<ArcType, number[]> = {
   [ArcType.FAITH]:  [7, 8, 9, 10, 11],
 };
 
-// Arc boundaries on the track (t values, 0 to 1)
-export const ARC_BOUNDARIES = {
-  theoryEnd: 5 / 12,   // ~0.417
-  mathEnd:   7 / 12,   // ~0.583
-  // faithEnd wraps back to 0
-} as const;
+// ─── Two-Level Orbital System ────────────────────────────────────────────────
 
-export interface TrackPhysicsState {
-  t: number;              // position on track 0.0-1.0
-  velocity: number;       // current momentum
-  nearestSection: number; // index 0-11
-  currentArc: ArcType;    // derived from t
+/** Hub angles on the macro orbit (radians, 120° apart) */
+export const HUB_ANGLES: Record<ArcType, number> = {
+  [ArcType.THEORY]: 0,
+  [ArcType.MATH]:   (2 * Math.PI) / 3,
+  [ArcType.FAITH]:  (4 * Math.PI) / 3,
+};
+
+/** Ordered arc sequence for clockwise traversal */
+export const ARC_ORDER: ArcType[] = [ArcType.THEORY, ArcType.MATH, ArcType.FAITH];
+
+/** Radius of the outer macro orbit */
+export const MACRO_RADIUS = 150;
+
+/** Radius of the micro orbit around each hub */
+export const MICRO_RADIUS = 40;
+
+/** Hub 3D positions (computed from HUB_ANGLES on XZ plane) */
+export const HUB_POSITIONS: Record<ArcType, { x: number; y: number; z: number }> = {
+  [ArcType.THEORY]: { x: Math.cos(HUB_ANGLES[ArcType.THEORY]) * MACRO_RADIUS, y: 0, z: Math.sin(HUB_ANGLES[ArcType.THEORY]) * MACRO_RADIUS },
+  [ArcType.MATH]:   { x: Math.cos(HUB_ANGLES[ArcType.MATH])   * MACRO_RADIUS, y: 0, z: Math.sin(HUB_ANGLES[ArcType.MATH])   * MACRO_RADIUS },
+  [ArcType.FAITH]:  { x: Math.cos(HUB_ANGLES[ArcType.FAITH])  * MACRO_RADIUS, y: 0, z: Math.sin(HUB_ANGLES[ArcType.FAITH])  * MACRO_RADIUS },
+};
+
+export type OrbitalMode = 'macro' | 'captured';
+
+export interface OrbitalState {
+  mode: OrbitalMode;
+  macroAngle: number;        // 0 to 2π, position on outer ring
+  microAngle: number;        // 0 to 2π, position on inner ring (when captured)
+  velocity: number;          // angular velocity (shared between modes)
+  capturedArc: ArcType | null;
+  nearestSection: number;    // global section index 0-11
+  currentArc: ArcType;       // derived from macro position or captured hub
 }
+
+// Keep legacy alias for any remaining references
+export type TrackPhysicsState = OrbitalState;
