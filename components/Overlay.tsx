@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { MANIFESTO_CONTENT } from '../constants';
 import { ARC_COLORS, ARC_LABELS, ARC_SECTIONS, ArcType, OrbitalMode } from '../types';
 import { TrackPhysicsReturn } from '../useTrackPhysics';
@@ -15,6 +15,28 @@ export const Overlay: React.FC<OverlayProps> = ({ physics }) => {
   const [mode, setMode] = useState<OrbitalMode>('macro');
   const [visible, setVisible] = useState(true);
   const prevSection = useRef(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  /** Decide whether text area captures the wheel event or lets it bubble to physics */
+  const handleTextWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = el;
+    const hasOverflow = scrollHeight > clientHeight + 1;
+    const scrollingDown = e.deltaY > 0;
+    const canScrollDown = scrollTop + clientHeight < scrollHeight - 1;
+    const canScrollUp = scrollTop > 1;
+
+    // If text has room to scroll in this direction, capture the event
+    if (hasOverflow && ((scrollingDown && canScrollDown) || (!scrollingDown && canScrollUp))) {
+      e.stopPropagation(); // prevent reaching window handler / physics
+      return;
+    }
+    // At boundary or no overflow — let it bubble to physics
+    // Prevent the browser from trying to native-scroll the text area at its boundary
+    e.preventDefault();
+  }, []);
 
   // Poll physics state at ~20fps for UI updates
   useEffect(() => {
@@ -107,6 +129,8 @@ export const Overlay: React.FC<OverlayProps> = ({ physics }) => {
 
           {/* Full content — scrollable on small screens */}
           <div
+            ref={scrollRef}
+            onWheel={handleTextWheel}
             data-scroll-container
             className="space-y-5 max-h-[50vh] overflow-y-auto pointer-events-auto pr-2 overlay-text-scroll"
             style={{

@@ -22,14 +22,19 @@ const HARD_SWIPE_DELTA  = 280;        // minimum single wheel deltaY to trigger 
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-/** Walk up the DOM from event target; returns true if inside a [data-scroll-container] */
-function isInsideScrollContainer(target: EventTarget | null): boolean {
+/** Walk up the DOM from event target; returns the scroll container element if inside one, else null */
+function findScrollContainer(target: EventTarget | null): HTMLElement | null {
   let el = target as HTMLElement | null;
   while (el) {
-    if (el.dataset?.scrollContainer !== undefined) return true;
+    if (el.dataset?.scrollContainer !== undefined) return el;
     el = el.parentElement;
   }
-  return false;
+  return null;
+}
+
+/** Convenience: returns true if inside a [data-scroll-container] */
+function isInsideScrollContainer(target: EventTarget | null): boolean {
+  return findScrollContainer(target) !== null;
 }
 
 function wrapAngle(a: number): number {
@@ -130,8 +135,6 @@ export function useTrackPhysics(): TrackPhysicsReturn {
 
   // ── Input handlers ────────────────────────────────────────────────────
   const onWheel = useCallback((e: WheelEvent) => {
-    // If scrolling inside a card's scroll container, let the browser handle it
-    if (isInsideScrollContainer(e.target)) return;
     e.preventDefault();
     state.current.velocity += e.deltaY * SCROLL_SENSITIVITY;
     // Track peak single-event deltaY for escape detection
