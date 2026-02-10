@@ -103,8 +103,14 @@ export const Overlay: React.FC<OverlayProps> = ({ physics }) => {
           {/* Divider */}
           <div className="w-full h-px mb-8" style={{ backgroundColor: arcColor + '25' }} />
 
-          {/* Full content */}
-          <div className="space-y-5">
+          {/* Full content — scrollable on small screens */}
+          <div
+            className="space-y-5 max-h-[50vh] overflow-y-auto pointer-events-auto pr-2 overlay-text-scroll"
+            style={{
+              maskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)',
+            }}
+          >
             {section.content.map((paragraph, i) => (
               <p
                 key={i}
@@ -135,7 +141,7 @@ export const Overlay: React.FC<OverlayProps> = ({ physics }) => {
       {/* ══ Section progress ══ right edge */}
       <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-1.5">
         {MANIFESTO_CONTENT.map((_, i) => {
-          const sectionArc = i < 5 ? ArcType.THEORY : i < 7 ? ArcType.MATH : ArcType.FAITH;
+          const sectionArc = i < 5 ? ArcType.THEORY : i < 9 ? ArcType.MATH : ArcType.FAITH;
           return (
             <div
               key={i}

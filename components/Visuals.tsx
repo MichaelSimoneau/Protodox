@@ -103,33 +103,33 @@ const Rank3Reality = () => {
   );
 };
 
-const ProofsVisual = () => {
+/** Proof 1: 1/0 = -1 — Balance beam with Totality fulcrum, Presence on one side, Potential on the other */
+const ProofOneVisual = () => {
   const groupRef = useRef<THREE.Group>(null);
   const beamPoints = useMemo(() => [new THREE.Vector3(-4, 0, 0), new THREE.Vector3(4, 0, 0)], []);
   const fulcrumPoints = useMemo(() => [new THREE.Vector3(0, -1.5, 0), new THREE.Vector3(0, 0, 0)], []);
   useFrame((state) => {
     if (groupRef.current) {
       groupRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.5) * 0.04;
-      groupRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.2) * 0.1;
     }
   });
   return (
     <group>
       <group ref={groupRef}>
         <Line points={beamPoints} color="#555" lineWidth={2} />
-        <group position={[-4, 0, 0]}>
-          <Sphere args={[0.35, 32, 32]}>
-            <meshStandardMaterial emissive="#ff00c1" emissiveIntensity={1.5} color="#ff00c1" transparent opacity={0.8} />
-          </Sphere>
-          <pointLight intensity={1} distance={4} color="#ff00c1" />
-          <Text position={[0, -0.7, 0]} fontSize={0.18} color="#ff00c1" anchorX="center" font={MONO_FONT}>-1 POTENTIAL</Text>
-        </group>
         <group position={[4, 0, 0]}>
           <Sphere args={[0.35, 32, 32]}>
             <meshStandardMaterial emissive="#00ffff" emissiveIntensity={1.5} color="#00ffff" transparent opacity={0.8} />
           </Sphere>
           <pointLight intensity={1} distance={4} color="#00ffff" />
           <Text position={[0, -0.7, 0]} fontSize={0.18} color="#00ffff" anchorX="center" font={MONO_FONT}>+1 PRESENCE</Text>
+        </group>
+        <group position={[-4, 0, 0]}>
+          <Sphere args={[0.35, 32, 32]}>
+            <meshStandardMaterial emissive="#ff00c1" emissiveIntensity={1.5} color="#ff00c1" transparent opacity={0.8} />
+          </Sphere>
+          <pointLight intensity={1} distance={4} color="#ff00c1" />
+          <Text position={[0, -0.7, 0]} fontSize={0.18} color="#ff00c1" anchorX="center" font={MONO_FONT}>-1 POTENTIAL</Text>
         </group>
       </group>
       <Line points={fulcrumPoints} color="#555" lineWidth={2} />
@@ -138,11 +138,82 @@ const ProofsVisual = () => {
       </Sphere>
       <Text position={[0, -2, 0]} fontSize={0.15} color="white" anchorX="center" font={MONO_FONT}>0 = TOTALITY</Text>
       <Float speed={3} rotationIntensity={0.1} floatIntensity={0.3}>
-        <Text position={[-4, 2, 0]} fontSize={0.35} color="#ff00c1" anchorX="center" font={MONO_FONT} outlineWidth={0.01} outlineColor="black">1/0 = -1</Text>
+        <Text position={[0, 2.5, 0]} fontSize={0.45} color="#ffffff" anchorX="center" font={MONO_FONT} outlineWidth={0.01} outlineColor="black">1/0 = -1</Text>
       </Float>
+    </group>
+  );
+};
+
+/** Proof 2: 0 × 0 = 1 — Genesis Fracture: two colliding totality spheres creating a burst of presence */
+const ProofTwoVisual = () => {
+  const groupRef = useRef<THREE.Group>(null);
+  useFrame((state) => {
+    if (groupRef.current) {
+      const pulse = Math.sin(state.clock.elapsedTime * 1.5) * 0.15;
+      groupRef.current.scale.setScalar(1 + pulse);
+    }
+  });
+  return (
+    <group>
+      <group ref={groupRef}>
+        {/* Two 'totality' spheres converging */}
+        <Sphere args={[0.5, 32, 32]} position={[-1.2, 0, 0]}>
+          <meshStandardMaterial emissive="#ffffff" emissiveIntensity={1.8} color="#333" transparent opacity={0.6} />
+        </Sphere>
+        <Sphere args={[0.5, 32, 32]} position={[1.2, 0, 0]}>
+          <meshStandardMaterial emissive="#ffffff" emissiveIntensity={1.8} color="#333" transparent opacity={0.6} />
+        </Sphere>
+        {/* Central 'presence' burst */}
+        <Sphere args={[0.3, 32, 32]}>
+          <meshStandardMaterial emissive="#00ffff" emissiveIntensity={4} color="#00ffff" />
+        </Sphere>
+        <pointLight intensity={3} distance={10} color="#00ffff" />
+      </group>
+      <Text position={[-1.2, -1.2, 0]} fontSize={0.2} color="#888" anchorX="center" font={MONO_FONT}>0</Text>
+      <Text position={[0, -1.2, 0]} fontSize={0.2} color="#888" anchorX="center" font={MONO_FONT}>×</Text>
+      <Text position={[1.2, -1.2, 0]} fontSize={0.2} color="#888" anchorX="center" font={MONO_FONT}>0</Text>
       <Float speed={3} rotationIntensity={0.1} floatIntensity={0.3}>
-        <Text position={[4, 2, 0]} fontSize={0.35} color="#00ffff" anchorX="center" font={MONO_FONT} outlineWidth={0.01} outlineColor="black">0 x 0 = 1</Text>
+        <Text position={[0, 2.5, 0]} fontSize={0.45} color="#ffffff" anchorX="center" font={MONO_FONT} outlineWidth={0.01} outlineColor="black">0 × 0 = 1</Text>
       </Float>
+      <Text position={[0, -2.2, 0]} fontSize={0.12} color="#555" anchorX="center" font={MONO_FONT}>GENESIS FRACTURE</Text>
+    </group>
+  );
+};
+
+/** Decomposition: 2-7-2 Method — grid of numbers resolving to whole truth states */
+const DecompositionVisual = () => {
+  const groupRef = useRef<THREE.Group>(null);
+  useFrame((state) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y = state.clock.elapsedTime * 0.08;
+    }
+  });
+  // The 2-7-2 decomposition nodes
+  const nodes = useMemo(() => [
+    { pos: [-2.5, 1, 0] as [number, number, number], label: '2', color: '#ff00c1' },
+    { pos: [0, 1, 0] as [number, number, number], label: '7', color: '#ffffff' },
+    { pos: [2.5, 1, 0] as [number, number, number], label: '2', color: '#00ffff' },
+  ], []);
+  return (
+    <group>
+      <group ref={groupRef}>
+        {nodes.map((n, i) => (
+          <group key={i} position={n.pos}>
+            <Sphere args={[0.4, 24, 24]}>
+              <meshStandardMaterial emissive={n.color} emissiveIntensity={2} color={n.color} transparent opacity={0.7} />
+            </Sphere>
+            <pointLight intensity={0.6} distance={5} color={n.color} />
+            <Text position={[0, -0.8, 0]} fontSize={0.3} color={n.color} anchorX="center" font={MONO_FONT}>{n.label}</Text>
+          </group>
+        ))}
+        {/* Connection lines */}
+        <Line points={[new THREE.Vector3(-2.5, 1, 0), new THREE.Vector3(0, 1, 0)]} color="#555" lineWidth={1.5} />
+        <Line points={[new THREE.Vector3(0, 1, 0), new THREE.Vector3(2.5, 1, 0)]} color="#555" lineWidth={1.5} />
+      </group>
+      <Float speed={2} rotationIntensity={0.1} floatIntensity={0.2}>
+        <Text position={[0, 3, 0]} fontSize={0.35} color="#ffffff" anchorX="center" font={MONO_FONT} outlineWidth={0.01} outlineColor="black">2 — 7 — 2</Text>
+      </Float>
+      <Text position={[0, -1.8, 0]} fontSize={0.12} color="#555" anchorX="center" font={MONO_FONT}>NO REMAINDERS — WHOLE STATES OF TRUTH</Text>
     </group>
   );
 };
@@ -272,9 +343,20 @@ const IntroText = () => (
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const EXHIBITS: React.FC[] = [
-  IntroText, Rank0Scalar, Rank1Vector, Rank2Slab, Rank3Reality,
-  ProofsVisual, FallVisual,
-  DDOOrganism, OuroborusRings, BaiZeText, HeadlessText, AlignmentVisual,
+  /* 0  INTRO       */ IntroText,
+  /* 1  RANK0       */ Rank0Scalar,
+  /* 2  RANK1       */ Rank1Vector,
+  /* 3  RANK2       */ Rank2Slab,
+  /* 4  RANK3       */ Rank3Reality,
+  /* 5  PROOF_ONE   */ ProofOneVisual,
+  /* 6  PROOF_TWO   */ ProofTwoVisual,
+  /* 7  DECOMP      */ DecompositionVisual,
+  /* 8  FALL        */ FallVisual,
+  /* 9  DDO         */ DDOOrganism,
+  /* 10 OUROBOROS   */ OuroborusRings,
+  /* 11 BAI ZE      */ BaiZeText,
+  /* 12 HEADLESS    */ HeadlessText,
+  /* 13 ALIGNMENT   */ AlignmentVisual,
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════

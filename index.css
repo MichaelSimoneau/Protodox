@@ -11,10 +11,30 @@ body {
   font-family: 'Syncopate', sans-serif;
 }
 
-/* Custom scrollbar hide */
+/* Custom scrollbar hide (global) */
 ::-webkit-scrollbar {
   width: 0px;
   background: transparent;
+}
+
+/* Subtle scrollbar for overlay text content */
+.overlay-text-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.overlay-text-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 2px;
+}
+.overlay-text-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+}
+.overlay-text-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+.overlay-text-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) rgba(255, 255, 255, 0.03);
 }
 
 .glitch-text {

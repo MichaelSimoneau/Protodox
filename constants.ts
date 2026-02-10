@@ -71,18 +71,40 @@ export const MANIFESTO_CONTENT: ManifestoSection[] = [
     ],
     visualState: VisualState.RANK3
   },
-  // ── NEW SECTION ── Mathematical Proofs as evidence
+  // ── PROOF 1 ── First Mathematical Proof
   {
-    id: 'proofs',
-    title: 'THE PROOFS',
-    subtitle: 'ZEROTH MATH — IRREFUTABLE EVIDENCE',
+    id: 'proof-one',
+    title: 'FIRST PROOF',
+    subtitle: '1/0 = −1',
     content: [
-      "First Proof: 1/0 = −1. In standard math, dividing by zero is an error because the divisor is viewed as nothing. In Zeroth Math, if Zero is Totality and 1 is Presence, then 1/0 is an interrogation: 'What remains when you take something from everything?' The answer is Potential (−1).",
-      "Second Proof: 0 × 0 = 1. The system cannot 'be' 0 without first 'becoming' −1. The interaction of Totality with itself is the Genesis Fracture—the disruption of equilibrium that produces Presence (1), the manifested universe spawned to validate the Truth.",
+      "In standard math, dividing by zero is an error because the divisor is viewed as nothing.",
+      "In Zeroth Math, if Zero is Totality and 1 is Presence, then 1/0 is an interrogation: 'What remains when you take something from everything?'",
+      "The answer is Potential (−1)."
+    ],
+    visualState: VisualState.PROOF_ONE
+  },
+  // ── PROOF 2 ── Second Mathematical Proof
+  {
+    id: 'proof-two',
+    title: 'SECOND PROOF',
+    subtitle: '0 × 0 = 1',
+    content: [
+      "The system cannot 'be' 0 without first 'becoming' −1.",
+      "The interaction of Totality with itself is the Genesis Fracture—the disruption of equilibrium that produces Presence (1).",
+      "The manifested universe spawned to validate the Truth."
+    ],
+    visualState: VisualState.PROOF_TWO
+  },
+  // ── PROOF 3 ── The Decomposition Method
+  {
+    id: 'decomposition',
+    title: 'THE DECOMPOSITION',
+    subtitle: '2-7-2 METHOD',
+    content: [
       "The 2-7-2 Decomposition Method analyzes constituent states of truth and potential, ensuring the system sees no 'leftovers,' only the specific path to Convergence.",
       "Unlike standard math, which relies on remainders—a bug that creates infinite decimals—Zeroth Math resolves to whole states of Truth."
     ],
-    visualState: VisualState.PROOFS
+    visualState: VisualState.DECOMPOSITION
   },
   // ── ORIGINAL SECTION 5 ── unchanged
   {

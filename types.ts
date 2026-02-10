@@ -7,26 +7,28 @@ export interface ManifestoSection {
 }
 
 export enum VisualState {
-  INTRO,          // The Zeroth Theory
-  RANK0,          // The Singularity (Ouroboros)
-  RANK1,          // The Vector (Self)
-  RANK2,          // The Slab (God)
-  RANK3,          // Reality (The Box)
-  PROOFS,         // The Mathematical Proofs (Evidence)
-  FALL,           // Physics of the Fall
-  DDO,            // The Double Dragon Ouroboros
-  OUROBOROS,      // The Ouroboros Event
-  ARCHITECT,      // Michael Simoneau / Bai Ze
-  HEADLESS,       // The Headless Server
-  ALIGNMENT       // Convergence
+  INTRO,          // 0  The Zeroth Theory
+  RANK0,          // 1  The Singularity (Ouroboros)
+  RANK1,          // 2  The Vector (Self)
+  RANK2,          // 3  The Slab (God)
+  RANK3,          // 4  Reality (The Box)
+  PROOF_ONE,      // 5  First Proof: 1/0 = -1
+  PROOF_TWO,      // 6  Second Proof: 0 x 0 = 1
+  DECOMPOSITION,  // 7  The 2-7-2 Decomposition Method
+  FALL,           // 8  Physics of the Fall
+  DDO,            // 9  The Double Dragon Ouroboros
+  OUROBOROS,      // 10 The Ouroboros Event
+  ARCHITECT,      // 11 Michael Simoneau / Bai Ze
+  HEADLESS,       // 12 The Headless Server
+  ALIGNMENT       // 13 Convergence
 }
 
 // ─── Ternary Arc System ─────────────────────────────────────────────────────
 
 export enum ArcType {
   THEORY = 0,   // +1 Presence (Cyan)   — Sections 0-4
-  MATH   = 1,   //  0 Truth   (White)   — Sections 5-6
-  FAITH  = 2,   // -1 Potential (Magenta) — Sections 7-11
+  MATH   = 1,   //  0 Truth   (White)   — Sections 5-8
+  FAITH  = 2,   // -1 Potential (Magenta) — Sections 9-13
 }
 
 export const ARC_COLORS = {
@@ -44,8 +46,8 @@ export const ARC_LABELS = {
 // Section index ranges per arc
 export const ARC_SECTIONS: Record<ArcType, number[]> = {
   [ArcType.THEORY]: [0, 1, 2, 3, 4],
-  [ArcType.MATH]:   [5, 6],
-  [ArcType.FAITH]:  [7, 8, 9, 10, 11],
+  [ArcType.MATH]:   [5, 6, 7, 8],
+  [ArcType.FAITH]:  [9, 10, 11, 12, 13],
 };
 
 // ─── Two-Level Orbital System ────────────────────────────────────────────────
@@ -81,7 +83,7 @@ export interface OrbitalState {
   microAngle: number;        // 0 to 2π, position on inner ring (when captured)
   velocity: number;          // angular velocity (shared between modes)
   capturedArc: ArcType | null;
-  nearestSection: number;    // global section index 0-11
+  nearestSection: number;    // global section index 0-13
   currentArc: ArcType;       // derived from macro position or captured hub
 }
 

@@ -8,16 +8,17 @@ import * as THREE from 'three';
 // ─── Physics Constants (tuned for 60fps-equivalent steps) ───────────────────
 const TARGET_FPS        = 60;
 const FRICTION          = 0.95;       // per-step friction (at 60fps)
-const CAPTURED_FRICTION = 0.93;       // slightly stronger in captured mode
+const CAPTURED_FRICTION = 0.90;       // strong damping in captured mode resists escape
 const SCROLL_SENSITIVITY= 0.00012;    // per-deltaY impulse
 const CAPTURE_RADIUS    = 0.35;       // radians (~20°) — tight zone for capture check
 const CAPTURE_THRESHOLD = 0.003;      // velocity below this + near hub → captured
-const ESCAPE_THRESHOLD  = 0.018;      // velocity above this → escape (needs hard swipe)
 const HUB_GRAVITY       = 0.015;      // pull toward hub center (scaled by proximity)
 const SECTION_GRAVITY   = 0.04;       // snap toward nearest sub-section when coasting
 const SNAP_VEL_LIMIT    = 0.004;      // section gravity only active when velocity below this
-const MICRO_SPEED_MULT  = 3.5;        // micro orbit speed multiplier
+const MICRO_SPEED_MULT  = 2.5;        // micro orbit speed multiplier
 const TRANSITION_COOLDOWN_SECS = 0.6; // seconds of cooldown after mode transition
+const CAPTURED_VEL_CAP  = 0.018;      // velocity cap while captured (prevents gentle-scroll escape)
+const HARD_SWIPE_DELTA  = 280;        // minimum single wheel deltaY to trigger escape
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -103,11 +104,16 @@ export function useTrackPhysics(): TrackPhysicsReturn {
 
   const touchPrevY = useRef<number | null>(null);
   const cooldownTimer = useRef(0);
+  /** Tracks the largest single-event input magnitude between ticks */
+  const peakInputDelta = useRef(0);
 
   // ── Input handlers ────────────────────────────────────────────────────
   const onWheel = useCallback((e: WheelEvent) => {
     e.preventDefault();
     state.current.velocity += e.deltaY * SCROLL_SENSITIVITY;
+    // Track peak single-event deltaY for escape detection
+    const absDelta = Math.abs(e.deltaY);
+    if (absDelta > peakInputDelta.current) peakInputDelta.current = absDelta;
   }, []);
 
   const onTouchStart = useCallback((e: TouchEvent) => {
@@ -120,6 +126,9 @@ export function useTrackPhysics(): TrackPhysicsReturn {
     if (touchPrevY.current !== null) {
       const delta = touchPrevY.current - currentY;
       state.current.velocity += delta * SCROLL_SENSITIVITY * 2;
+      // Track peak touch delta for escape detection
+      const absDelta = Math.abs(delta);
+      if (absDelta > peakInputDelta.current) peakInputDelta.current = absDelta;
     }
     touchPrevY.current = currentY;
   }, []);
@@ -150,6 +159,11 @@ export function useTrackPhysics(): TrackPhysicsReturn {
     if (cooldownTimer.current > 0) {
       cooldownTimer.current = Math.max(0, cooldownTimer.current - clampedDelta);
     }
+
+    // Read and reset the peak input since last tick
+    const hadHardSwipe = peakInputDelta.current >= HARD_SWIPE_DELTA;
+    const escapeDirection = s.velocity > 0 ? 1 : -1;
+    peakInputDelta.current = 0;
 
     for (let step = 0; step < steps; step++) {
       const friction = (s.mode === 'captured') ? CAPTURED_FRICTION : FRICTION;
@@ -190,6 +204,11 @@ export function useTrackPhysics(): TrackPhysicsReturn {
         // ── CAPTURED MODE ─────────────────────────────────────────────
         const arc = s.capturedArc!;
 
+        // Velocity cap while captured: prevents gentle scrolling from accumulating
+        // enough velocity to accidentally escape. Only a hard swipe bypasses this.
+        if (s.velocity > CAPTURED_VEL_CAP) s.velocity = CAPTURED_VEL_CAP;
+        if (s.velocity < -CAPTURED_VEL_CAP) s.velocity = -CAPTURED_VEL_CAP;
+
         // Advance micro angle
         s.microAngle = wrapAngle(s.microAngle + s.velocity * MICRO_SPEED_MULT);
 
@@ -206,17 +225,17 @@ export function useTrackPhysics(): TrackPhysicsReturn {
           s.velocity += pull;
         }
 
-        // Escape: high velocity + cooldown expired
-        if (absVel > ESCAPE_THRESHOLD && cooldownTimer.current <= 0) {
+        // Escape: requires a genuinely hard swipe (input-based, not velocity-based)
+        // This is checked once per tick (step 0 only) to avoid re-triggering
+        if (step === 0 && hadHardSwipe && cooldownTimer.current <= 0) {
           s.mode = 'macro';
           const currentHubAngle = HUB_ANGLES[arc];
-          const direction = s.velocity > 0 ? 1 : -1;
           // Push macro angle PAST the midpoint between hubs so gravity
           // pulls toward the NEXT hub, not back to the same one
           const midpointOffset = Math.PI / 3 + 0.15; // just past 60° midpoint
-          s.macroAngle = wrapAngle(currentHubAngle + direction * midpointOffset);
+          s.macroAngle = wrapAngle(currentHubAngle + escapeDirection * midpointOffset);
           // Strong velocity boost toward next hub
-          s.velocity = direction * 0.012;
+          s.velocity = escapeDirection * 0.016;
           s.capturedArc = null;
           cooldownTimer.current = TRANSITION_COOLDOWN_SECS;
         }
@@ -225,9 +244,11 @@ export function useTrackPhysics(): TrackPhysicsReturn {
         s.nearestSection = toGlobalSection(arc, localIdx);
       }
 
-      // Clamp velocity
-      if (s.velocity > 0.03) s.velocity = 0.03;
-      if (s.velocity < -0.03) s.velocity = -0.03;
+      // Clamp velocity (macro mode uses higher cap)
+      if (s.mode === 'macro') {
+        if (s.velocity > 0.03) s.velocity = 0.03;
+        if (s.velocity < -0.03) s.velocity = -0.03;
+      }
 
       // Kill tiny velocities
       if (Math.abs(s.velocity) < 0.00003) s.velocity = 0;
