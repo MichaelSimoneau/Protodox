@@ -40,7 +40,7 @@ export const ARC_COLORS = {
 export const ARC_LABELS = {
   [ArcType.THEORY]: '+1 THEORY',
   [ArcType.MATH]:   '0 MATH',
-  [ArcType.FAITH]:  '-1 FAITH',
+  [ArcType.FAITH]:  '-1 POTENTIAL',
 } as const;
 
 // Section index ranges per arc

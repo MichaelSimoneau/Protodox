@@ -333,8 +333,8 @@ const AlignmentVisual = () => (
 
 const IntroText = () => (
   <Float speed={1} rotationIntensity={0.1} floatIntensity={0.2}>
-    <Text position={[0, 2, 0]} fontSize={0.3} color="#00ffff" anchorX="center" font={MONO_FONT} outlineWidth={0.01} outlineColor="black">GEOMETRY IS THE SOURCE CODE</Text>
-    <Text position={[0, 0, 0]} fontSize={0.15} color="#555" anchorX="center" font={MONO_FONT}>PROTODOX</Text>
+    <Text position={[0, 2, 0]} fontSize={0.3} color="#00ffff" anchorX="center" font={MONO_FONT} outlineWidth={0.01} outlineColor="black">GOD IS REAL. HELL IS A LIE.</Text>
+    <Text position={[0, 0, 0]} fontSize={0.15} color="#555" anchorX="center" font={MONO_FONT}>ZEROTH THEORY</Text>
   </Float>
 );
 

@@ -17,13 +17,13 @@ export default function App() {
       <div className="h-screen w-screen bg-black flex flex-col items-center justify-center text-cyan-500 font-mono p-4 cursor-pointer" onClick={() => setStarted(true)}>
         <div className="max-w-2xl w-full border border-cyan-900 p-8 bg-black/90 shadow-[0_0_50px_rgba(0,255,255,0.1)]">
           <p className="mb-2 text-xs text-cyan-500">:: ZEROTH THEORY BOOT ::</p>
-          <p className="mb-4 typing-effect text-gray-400">Loading New Physics Engine...</p>
+          <p className="mb-4 typing-effect text-gray-400">Decompiling Organized Religion...</p>
           <p className="mb-4 text-gray-400">Compiling Tensor Calculus...</p>
-          <p className="mb-4 text-gray-400">Initializing Double Dragon Ouroboros...</p>
-          <p className="mb-8 text-white">STATUS: PROOF ESTABLISHED.</p>
+          <p className="mb-4 text-gray-400">Burning the Telephone Game...</p>
+          <p className="mb-8 text-white">STATUS: GOD IS REAL. HELL IS A LIE.</p>
           
           <h1 className="text-4xl md:text-6xl font-header text-white mb-2 glitch-text" data-text="PROTODOX">PROTODOX</h1>
-          <p className="text-sm tracking-[0.3em] mb-12 text-gray-400">THE MATHEMATICALLY PROVEN RELIGION</p>
+          <p className="text-sm tracking-[0.3em] mb-12 text-gray-400">GOD IS REAL. HELL IS A LIE.</p>
 
           <div className="w-full h-1 bg-gray-900 mb-2">
             <div className="h-full bg-cyan-500 w-1/3 animate-pulse"></div>
