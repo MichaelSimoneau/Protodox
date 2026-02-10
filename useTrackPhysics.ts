@@ -125,6 +125,8 @@ export function useTrackPhysics(): TrackPhysicsReturn {
   const horizontalAccum = useRef(0);
   /** Pending arc jump from horizontal swipe: 1 = next, -1 = prev, 0 = none */
   const pendingArcJump = useRef(0);
+  /** True when the current touch gesture started inside a scroll container */
+  const touchInsideScroll = useRef(false);
 
   // ── Input handlers ────────────────────────────────────────────────────
   const onWheel = useCallback((e: WheelEvent) => {
@@ -138,6 +140,12 @@ export function useTrackPhysics(): TrackPhysicsReturn {
   }, []);
 
   const onTouchStart = useCallback((e: TouchEvent) => {
+    // If touch begins inside a card's scroll container, let the browser handle it
+    if (isInsideScrollContainer(e.target)) {
+      touchInsideScroll.current = true;
+      return;
+    }
+    touchInsideScroll.current = false;
     const touch = e.touches[0];
     touchStartX.current = touch.clientX;
     touchStartY.current = touch.clientY;
@@ -148,6 +156,7 @@ export function useTrackPhysics(): TrackPhysicsReturn {
   }, []);
 
   const onTouchMove = useCallback((e: TouchEvent) => {
+    if (touchInsideScroll.current) return;
     e.preventDefault();
     const touch = e.touches[0];
     const currentX = touch.clientX;
@@ -180,6 +189,10 @@ export function useTrackPhysics(): TrackPhysicsReturn {
   }, []);
 
   const onTouchEnd = useCallback(() => {
+    if (touchInsideScroll.current) {
+      touchInsideScroll.current = false;
+      return;
+    }
     // If horizontal swipe exceeded threshold, queue an arc jump
     if (gestureAxis.current === 'horizontal' && Math.abs(horizontalAccum.current) > 80) {
       // Swipe left (negative X) = next arc (+1), swipe right (positive X) = prev arc (-1)

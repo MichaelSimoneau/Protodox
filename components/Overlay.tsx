@@ -7,6 +7,8 @@ interface OverlayProps {
   physics: TrackPhysicsReturn;
 }
 
+const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+
 export const Overlay: React.FC<OverlayProps> = ({ physics }) => {
   const [currentSection, setCurrentSection] = useState(0);
   const [currentArc, setCurrentArc] = useState<ArcType>(ArcType.THEORY);
@@ -105,6 +107,7 @@ export const Overlay: React.FC<OverlayProps> = ({ physics }) => {
 
           {/* Full content — scrollable on small screens */}
           <div
+            data-scroll-container
             className="space-y-5 max-h-[50vh] overflow-y-auto pointer-events-auto pr-2 overlay-text-scroll"
             style={{
               maskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)',
@@ -159,7 +162,10 @@ export const Overlay: React.FC<OverlayProps> = ({ physics }) => {
 
       {/* ══ Scroll hint ══ bottom center */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[9px] text-gray-600 tracking-[0.2em] animate-pulse">
-        {mode === 'macro' ? 'SCROLL TO APPROACH' : 'SCROLL TO CYCLE  •  SWIPE HARD TO ESCAPE'}
+        {mode === 'macro'
+          ? (isTouchDevice ? 'SWIPE TO APPROACH' : 'SCROLL TO APPROACH')
+          : (isTouchDevice ? 'SWIPE TO CYCLE  •  SWIPE SIDEWAYS TO CHANGE SECTION' : 'SCROLL TO CYCLE  •  SWIPE HARD TO ESCAPE')
+        }
       </div>
     </div>
   );
