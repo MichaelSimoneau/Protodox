@@ -22,6 +22,16 @@ const HARD_SWIPE_DELTA  = 280;        // minimum single wheel deltaY to trigger 
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
+/** Walk up the DOM from event target; returns true if inside a [data-scroll-container] */
+function isInsideScrollContainer(target: EventTarget | null): boolean {
+  let el = target as HTMLElement | null;
+  while (el) {
+    if (el.dataset?.scrollContainer !== undefined) return true;
+    el = el.parentElement;
+  }
+  return false;
+}
+
 function wrapAngle(a: number): number {
   const TWO_PI = Math.PI * 2;
   return ((a % TWO_PI) + TWO_PI) % TWO_PI;
@@ -102,13 +112,24 @@ export function useTrackPhysics(): TrackPhysicsReturn {
     currentArc: ArcType.THEORY,
   });
 
-  const touchPrevY = useRef<number | null>(null);
   const cooldownTimer = useRef(0);
   /** Tracks the largest single-event input magnitude between ticks */
   const peakInputDelta = useRef(0);
 
+  // ── Touch gesture state ──────────────────────────────────────────────
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const touchPrevX = useRef<number | null>(null);
+  const touchPrevY = useRef<number | null>(null);
+  const gestureAxis = useRef<'vertical' | 'horizontal' | null>(null);
+  const horizontalAccum = useRef(0);
+  /** Pending arc jump from horizontal swipe: 1 = next, -1 = prev, 0 = none */
+  const pendingArcJump = useRef(0);
+
   // ── Input handlers ────────────────────────────────────────────────────
   const onWheel = useCallback((e: WheelEvent) => {
+    // If scrolling inside a card's scroll container, let the browser handle it
+    if (isInsideScrollContainer(e.target)) return;
     e.preventDefault();
     state.current.velocity += e.deltaY * SCROLL_SENSITIVITY;
     // Track peak single-event deltaY for escape detection
@@ -117,24 +138,58 @@ export function useTrackPhysics(): TrackPhysicsReturn {
   }, []);
 
   const onTouchStart = useCallback((e: TouchEvent) => {
-    touchPrevY.current = e.touches[0].clientY;
+    const touch = e.touches[0];
+    touchStartX.current = touch.clientX;
+    touchStartY.current = touch.clientY;
+    touchPrevX.current = touch.clientX;
+    touchPrevY.current = touch.clientY;
+    gestureAxis.current = null;
+    horizontalAccum.current = 0;
   }, []);
 
   const onTouchMove = useCallback((e: TouchEvent) => {
     e.preventDefault();
-    const currentY = e.touches[0].clientY;
-    if (touchPrevY.current !== null) {
-      const delta = touchPrevY.current - currentY;
-      state.current.velocity += delta * SCROLL_SENSITIVITY * 2;
-      // Track peak touch delta for escape detection
-      const absDelta = Math.abs(delta);
-      if (absDelta > peakInputDelta.current) peakInputDelta.current = absDelta;
+    const touch = e.touches[0];
+    const currentX = touch.clientX;
+    const currentY = touch.clientY;
+
+    // Determine gesture axis on first significant movement
+    if (gestureAxis.current === null) {
+      const totalDX = Math.abs(currentX - touchStartX.current);
+      const totalDY = Math.abs(currentY - touchStartY.current);
+      if (totalDX > 10 || totalDY > 10) {
+        gestureAxis.current = totalDX > totalDY ? 'horizontal' : 'vertical';
+      }
     }
+
+    if (gestureAxis.current === 'vertical' && touchPrevY.current !== null) {
+      // Vertical gesture: feed deltaY into velocity for sub-section cycling
+      const deltaY = touchPrevY.current - currentY;
+      state.current.velocity += deltaY * SCROLL_SENSITIVITY * 2;
+      // Track peak touch delta for escape detection (vertical hard swipe)
+      const absDelta = Math.abs(deltaY);
+      if (absDelta > peakInputDelta.current) peakInputDelta.current = absDelta;
+    } else if (gestureAxis.current === 'horizontal' && touchPrevX.current !== null) {
+      // Horizontal gesture: accumulate X displacement for arc jump
+      const deltaX = currentX - touchPrevX.current;
+      horizontalAccum.current += deltaX;
+    }
+
+    touchPrevX.current = currentX;
     touchPrevY.current = currentY;
   }, []);
 
   const onTouchEnd = useCallback(() => {
+    // If horizontal swipe exceeded threshold, queue an arc jump
+    if (gestureAxis.current === 'horizontal' && Math.abs(horizontalAccum.current) > 80) {
+      // Swipe left (negative X) = next arc (+1), swipe right (positive X) = prev arc (-1)
+      pendingArcJump.current = horizontalAccum.current < 0 ? 1 : -1;
+    }
+    // Reset gesture state
+    touchPrevX.current = null;
     touchPrevY.current = null;
+    gestureAxis.current = null;
+    horizontalAccum.current = 0;
   }, []);
 
   useEffect(() => {
@@ -158,6 +213,22 @@ export function useTrackPhysics(): TrackPhysicsReturn {
 
     if (cooldownTimer.current > 0) {
       cooldownTimer.current = Math.max(0, cooldownTimer.current - clampedDelta);
+    }
+
+    // ── Handle pending horizontal swipe arc jump ─────────────────────────
+    if (pendingArcJump.current !== 0 && cooldownTimer.current <= 0) {
+      const currentArc = s.capturedArc ?? s.currentArc;
+      const currentIdx = ARC_ORDER.indexOf(currentArc);
+      const nextIdx = (currentIdx + pendingArcJump.current + 3) % 3;
+      const nextArc = ARC_ORDER[nextIdx];
+
+      s.mode = 'macro';
+      s.macroAngle = HUB_ANGLES[nextArc];
+      s.velocity = 0;
+      s.capturedArc = null;
+      s.currentArc = nextArc;
+      cooldownTimer.current = TRANSITION_COOLDOWN_SECS;
+      pendingArcJump.current = 0;
     }
 
     // Read and reset the peak input since last tick
